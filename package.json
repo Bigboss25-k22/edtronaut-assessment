@@ -15,7 +15,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@prisma/client": "^7.0.0",
+    "@prisma/client": "^5.22.0",
     "bullmq": "^5.64.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
@@ -23,6 +23,7 @@
     "helmet": "^8.1.0",
     "joi": "^18.0.2",
     "morgan": "^1.10.1",
+    "swagger-ui-express": "^5.0.1",
     "winston": "^3.18.3"
   },
   "devDependencies": {
@@ -31,8 +32,9 @@
     "@types/helmet": "^0.0.48",
     "@types/morgan": "^1.9.10",
     "@types/node": "^24.10.1",
+    "@types/swagger-ui-express": "^4.1.8",
     "nodemon": "^3.1.11",
-    "prisma": "^7.0.0",
+    "prisma": "^5.22.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }

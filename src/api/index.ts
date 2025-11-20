@@ -2,18 +2,22 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import { requestLogger } from '../utils/logger';
+import apiRouter from './routes';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerDocument, swaggerOptions } from '../config/swagger';
 
 const app = express();
 
-// Parse JSON first
 app.use(express.json());
-// Security + CORS
 app.use(cors());
 app.use(helmet());
-
-// HTTP request logging: morgan for concise console output + our requestLogger for structured logging
 app.use(morgan('dev'));
-app.use(requestLogger);
+
+// Mount API routes under /api
+app.use('/api', apiRouter);
+
+// Swagger UI (interactive API docs)
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerOptions));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerOptions));
 
 export default app;

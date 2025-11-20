@@ -1,0 +1,169 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Edtronaut Assessment API",
+    "version": "1.0.0",
+    "description": "OpenAPI 3 specification for the submission and scoring endpoints used in the assessment."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local server"
+    }
+  ],
+  "paths": {
+    "/api/submissions": {
+      "post": {
+        "summary": "Create a new submission",
+        "description": "Create a submission record. Returns created Submission.",
+        "tags": ["Submission"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SubmissionCreate" },
+              "examples": {
+                "simple": {
+                  "summary": "Create example",
+                  "value": {
+                    "learnerId": "learner-123",
+                    "simulationId": "sim-abc"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Submission created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Submission" },
+                "example": {
+                  "id": "sub-1",
+                  "learnerId": "learner-123",
+                  "simulationId": "sim-abc",
+                  "content": "",
+                  "status": "IN_PROGRESS",
+                  "createdAt": "2025-11-21T00:00:00Z",
+                  "updatedAt": "2025-11-21T00:00:00Z"
+                }
+              }
+            }
+          },
+          "400": { "description": "Validation error" },
+          "500": { "description": "Internal Server Error" }
+        }
+      }
+    },
+    "/api/submissions/{submissionId}": {
+      "patch": {
+        "summary": "Update a submission",
+        "description": "Update submission content (only if not already submitted).",
+        "tags": ["Submission"],
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Submission identifier"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SubmissionUpdate" },
+              "example": { "content": "{ \"answer\": \"...\" }" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Submission updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Submission" }
+              }
+            }
+          },
+          "400": { "description": "Validation error" },
+          "404": { "description": "Submission not found" },
+          "500": { "description": "Internal Server Error" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Status": {
+        "type": "string",
+        "enum": [
+          "IN_PROGRESS",
+          "SUBMITTED",
+          "QUEUED",
+          "RUNNING",
+          "DONE",
+          "ERROR"
+        ]
+      },
+      "Submission": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "learnerId": { "type": "string" },
+          "simulationId": { "type": "string" },
+          "content": { "type": "string" },
+          "status": { "$ref": "#/components/schemas/Status" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": [
+          "id",
+          "learnerId",
+          "simulationId",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "SubmissionCreate": {
+        "type": "object",
+        "properties": {
+          "learnerId": { "type": "string" },
+          "simulationId": { "type": "string" },
+          "content": {
+            "type": "string",
+            "description": "Optional initial content"
+          }
+        },
+        "required": ["learnerId", "simulationId"]
+      },
+      "SubmissionUpdate": {
+        "type": "object",
+        "properties": {
+          "content": { "type": "string" }
+        },
+        "required": ["content"]
+      },
+      "ScoreJob": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "submissionId": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["QUEUED", "RUNNING", "DONE", "ERROR"]
+          },
+          "score": { "type": "number" },
+          "feedback": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "startedAt": { "type": "string", "format": "date-time" },
+          "completedAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}
