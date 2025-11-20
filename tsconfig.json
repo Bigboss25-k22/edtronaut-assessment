@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",                       /* Build ra JS phiên bản mới */
+    "module": "commonjs",                     /* Node.js dùng CommonJS */
+    "rootDir": "./src",                       /* Code nguồn nằm ở đâu? */
+    "outDir": "./dist",                       /* Code build xong ném vào đâu? */
+    "strict": true,                           /* Bật chế độ kiểm tra nghiêm ngặt (Chuẩn Enterprise) */
+    "esModuleInterop": true,                  /* Cho phép import module CommonJS dễ dàng */
+    "skipLibCheck": true,                     /* Bỏ qua check type trong node_modules cho nhanh */
+    "forceConsistentCasingInFileNames": true  /* Bắt buộc viết đúng hoa thường tên file */
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "**/*.test.ts"]
+}

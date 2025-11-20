@@ -1,0 +1,37 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Submission {
+  id           String   @id @default(uuid())
+  learnerId    String
+  simulationId String
+  content      Json
+  status       String   @default("IN_PROGRESS") // IN_PROGRESS, SUBMITTED
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  scoringJobs  ScoringJob[]
+}
+
+model ScoringJob {
+  id           String   @id @default(uuid())
+  submissionId String
+  submission   Submission @relation(fields: [submissionId], references: [id])
+  status       String   @default("QUEUED") // QUEUED, RUNNING, DONE, ERROR
+  score        Float?
+  feedback     String?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime @default(now())
+}
