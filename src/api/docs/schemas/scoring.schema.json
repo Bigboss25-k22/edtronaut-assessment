@@ -1,0 +1,62 @@
+{
+  "ScoringJobStatus": {
+    "type": "string",
+    "enum": ["QUEUED", "RUNNING", "DONE", "ERROR"],
+    "description": "Status of a scoring job"
+  },
+  "ScoringJobCreateRequest": {
+    "type": "object",
+    "required": ["submission_id"],
+    "properties": {
+      "submission_id": {
+        "type": "string",
+        "format": "uuid",
+        "description": "Unique identifier of the submission to score",
+        "example": "550e8400-e29b-41d4-a716-446655440000"
+      }
+    }
+  },
+  "ScoringJobCreateResponse": {
+    "type": "object",
+    "required": ["job_id", "status"],
+    "properties": {
+      "job_id": {
+        "type": "string",
+        "format": "uuid",
+        "example": "660e8400-e29b-41d4-a716-446655440111"
+      },
+      "status": {
+        "type": "string",
+        "enum": ["QUEUED"],
+        "example": "QUEUED"
+      }
+    }
+  },
+  "ScoringJobResponse": {
+    "type": "object",
+    "required": ["job_id", "status"],
+    "properties": {
+      "job_id": {
+        "type": "string",
+        "format": "uuid",
+        "example": "660e8400-e29b-41d4-a716-446655440111"
+      },
+      "status": {
+        "$ref": "#/components/schemas/ScoringJobStatus"
+      },
+      "score": {
+        "type": "number",
+        "format": "float",
+        "nullable": true,
+        "example": 85.5,
+        "minimum": 0,
+        "maximum": 100
+      },
+      "feedback": {
+        "type": "string",
+        "nullable": true,
+        "example": "Good work! Consider improving your approach to question 2."
+      }
+    }
+  }
+}

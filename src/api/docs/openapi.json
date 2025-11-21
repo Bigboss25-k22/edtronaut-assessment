@@ -3,165 +3,543 @@
   "info": {
     "title": "Edtronaut Assessment API",
     "version": "1.0.0",
-    "description": "OpenAPI 3 specification for the submission and scoring endpoints used in the assessment."
+    "description": "Complete OpenAPI 3 specification for submission and scoring endpoints",
+    "contact": {
+      "name": "API Support",
+      "email": "support@edtronaut.com"
+    }
   },
   "servers": [
     {
       "url": "http://localhost:3000",
-      "description": "Local server"
+      "description": "Local development server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Submissions",
+      "description": "Operations related to learner submissions"
+    },
+    {
+      "name": "Scoring",
+      "description": "Operations related to scoring jobs"
     }
   ],
   "paths": {
     "/api/submissions": {
       "post": {
         "summary": "Create a new submission",
-        "description": "Create a submission record. Returns created Submission.",
-        "tags": ["Submission"],
+        "description": "Creates a new submission with status IN_PROGRESS",
+        "tags": [
+          "Submissions"
+        ],
+        "operationId": "createSubmission",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/SubmissionCreate" },
-              "examples": {
-                "simple": {
-                  "summary": "Create example",
-                  "value": {
-                    "learnerId": "learner-123",
-                    "simulationId": "sim-abc"
-                  }
-                }
+              "schema": {
+                "$ref": "#/components/schemas/SubmissionCreateRequest"
+              },
+              "example": {
+                "learnerId": "learner-abc123",
+                "simulationId": "sim-xyz789"
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Submission created",
+            "description": "Submission created successfully",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Submission" },
-                "example": {
-                  "id": "sub-1",
-                  "learnerId": "learner-123",
-                  "simulationId": "sim-abc",
-                  "content": "",
-                  "status": "IN_PROGRESS",
-                  "createdAt": "2025-11-21T00:00:00Z",
-                  "updatedAt": "2025-11-21T00:00:00Z"
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionCreateResponse"
                 }
               }
             }
           },
-          "400": { "description": "Validation error" },
-          "500": { "description": "Internal Server Error" }
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
         }
       }
     },
     "/api/submissions/{submissionId}": {
       "patch": {
-        "summary": "Update a submission",
-        "description": "Update submission content (only if not already submitted).",
-        "tags": ["Submission"],
+        "summary": "Update submission content",
+        "description": "Updates content (only if status is IN_PROGRESS)",
+        "tags": [
+          "Submissions"
+        ],
+        "operationId": "updateSubmission",
         "parameters": [
           {
             "name": "submissionId",
             "in": "path",
             "required": true,
-            "schema": { "type": "string" },
-            "description": "Submission identifier"
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "550e8400-e29b-41d4-a716-446655440000"
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/SubmissionUpdate" },
-              "example": { "content": "{ \"answer\": \"...\" }" }
+              "schema": {
+                "$ref": "#/components/schemas/SubmissionUpdateRequest"
+              },
+              "example": {
+                "content": {
+                  "source_code": "function add(a, b) { return a + b; }",
+                  "documentation": "This function adds two numbers together"
+                }
+              }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Submission updated",
+            "description": "Submission updated successfully",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Submission" }
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionUpdateResponse"
+                }
               }
             }
           },
-          "400": { "description": "Validation error" },
-          "404": { "description": "Submission not found" },
-          "500": { "description": "Internal Server Error" }
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/submissions/{submissionId}/submit": {
+      "post": {
+        "summary": "Submit a submission",
+        "description": "Marks submission as SUBMITTED (no longer editable)",
+        "tags": [
+          "Submissions"
+        ],
+        "operationId": "submitSubmission",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Submission submitted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionSubmitResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/score-jobs": {
+      "post": {
+        "summary": "Create a scoring job",
+        "description": "Creates a new scoring job (queued for async processing)",
+        "tags": [
+          "Scoring"
+        ],
+        "operationId": "createScoringJob",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScoringJobCreateRequest"
+              },
+              "example": {
+                "submission_id": "550e8400-e29b-41d4-a716-446655440000"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Scoring job accepted and queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoringJobCreateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/score-jobs/{id}": {
+      "get": {
+        "summary": "Get scoring job status",
+        "description": "Retrieves job status, score and feedback (when available)",
+        "tags": [
+          "Scoring"
+        ],
+        "operationId": "getScoringJob",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "660e8400-e29b-41d4-a716-446655440111"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scoring job retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoringJobResponse"
+                },
+                "examples": {
+                  "queued": {
+                    "summary": "Job is queued",
+                    "value": {
+                      "job_id": "660e8400-e29b-41d4-a716-446655440111",
+                      "status": "QUEUED",
+                      "score": null,
+                      "feedback": null
+                    }
+                  },
+                  "done": {
+                    "summary": "Job completed",
+                    "value": {
+                      "job_id": "660e8400-e29b-41d4-a716-446655440111",
+                      "status": "DONE",
+                      "score": 85.5,
+                      "feedback": "Good work!"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
         }
       }
     }
   },
   "components": {
     "schemas": {
-      "Status": {
+      "SubmissionStatus": {
         "type": "string",
         "enum": [
           "IN_PROGRESS",
-          "SUBMITTED",
+          "SUBMITTED"
+        ],
+        "description": "Status of a submission"
+      },
+      "SubmissionCreateRequest": {
+        "type": "object",
+        "required": [
+          "learnerId",
+          "simulationId"
+        ],
+        "properties": {
+          "learnerId": {
+            "type": "string",
+            "description": "Unique identifier of the learner",
+            "example": "learner-abc123"
+          },
+          "simulationId": {
+            "type": "string",
+            "description": "Unique identifier of the simulation",
+            "example": "sim-xyz789"
+          }
+        }
+      },
+      "SubmissionCreateResponse": {
+        "type": "object",
+        "required": [
+          "message",
+          "submission_id",
+          "status"
+        ],
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Submission created successfully"
+          },
+          "submission_id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SubmissionStatus"
+          }
+        }
+      },
+      "SubmissionUpdateRequest": {
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "properties": {
+          "content": {
+            "type": "object",
+            "description": "Updated submission content",
+            "properties": {
+              "source_code": {
+                "type": "string",
+                "description": "Source code submitted by learner",
+                "example": "function hello() { return 'world'; }"
+              },
+              "documentation": {
+                "type": "string",
+                "description": "Documentation or explanation of the solution",
+                "example": "This function returns a greeting message"
+              }
+            }
+          }
+        }
+      },
+      "SubmissionUpdateResponse": {
+        "type": "object",
+        "required": [
+          "message",
+          "submission_id",
+          "status",
+          "updated_at"
+        ],
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Submission updated successfully"
+          },
+          "submission_id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SubmissionStatus"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2025-11-21T10:30:00.000Z"
+          }
+        }
+      },
+      "SubmissionSubmitResponse": {
+        "type": "object",
+        "required": [
+          "message",
+          "submission_id",
+          "status"
+        ],
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Submission submitted successfully"
+          },
+          "submission_id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SUBMITTED"
+            ],
+            "example": "SUBMITTED"
+          }
+        }
+      },
+      "ScoringJobStatus": {
+        "type": "string",
+        "enum": [
           "QUEUED",
           "RUNNING",
           "DONE",
           "ERROR"
-        ]
+        ],
+        "description": "Status of a scoring job"
       },
-      "Submission": {
+      "ScoringJobCreateRequest": {
         "type": "object",
-        "properties": {
-          "id": { "type": "string" },
-          "learnerId": { "type": "string" },
-          "simulationId": { "type": "string" },
-          "content": { "type": "string" },
-          "status": { "$ref": "#/components/schemas/Status" },
-          "createdAt": { "type": "string", "format": "date-time" },
-          "updatedAt": { "type": "string", "format": "date-time" }
-        },
         "required": [
-          "id",
-          "learnerId",
-          "simulationId",
-          "status",
-          "createdAt",
-          "updatedAt"
-        ]
-      },
-      "SubmissionCreate": {
-        "type": "object",
+          "submission_id"
+        ],
         "properties": {
-          "learnerId": { "type": "string" },
-          "simulationId": { "type": "string" },
-          "content": {
+          "submission_id": {
             "type": "string",
-            "description": "Optional initial content"
+            "format": "uuid",
+            "description": "Unique identifier of the submission to score",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
           }
-        },
-        "required": ["learnerId", "simulationId"]
+        }
       },
-      "SubmissionUpdate": {
+      "ScoringJobCreateResponse": {
         "type": "object",
+        "required": [
+          "job_id",
+          "status"
+        ],
         "properties": {
-          "content": { "type": "string" }
-        },
-        "required": ["content"]
-      },
-      "ScoreJob": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "string" },
-          "submissionId": { "type": "string" },
+          "job_id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "660e8400-e29b-41d4-a716-446655440111"
+          },
           "status": {
             "type": "string",
-            "enum": ["QUEUED", "RUNNING", "DONE", "ERROR"]
+            "enum": [
+              "QUEUED"
+            ],
+            "example": "QUEUED"
+          }
+        }
+      },
+      "ScoringJobResponse": {
+        "type": "object",
+        "required": [
+          "job_id",
+          "status"
+        ],
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "660e8400-e29b-41d4-a716-446655440111"
           },
-          "score": { "type": "number" },
-          "feedback": { "type": "string" },
-          "createdAt": { "type": "string", "format": "date-time" },
-          "startedAt": { "type": "string", "format": "date-time" },
-          "completedAt": { "type": "string", "format": "date-time" }
+          "status": {
+            "$ref": "#/components/schemas/ScoringJobStatus"
+          },
+          "score": {
+            "type": "number",
+            "format": "float",
+            "nullable": true,
+            "example": 85.5,
+            "minimum": 0,
+            "maximum": 100
+          },
+          "feedback": {
+            "type": "string",
+            "nullable": true,
+            "example": "Good work! Consider improving your approach to question 2."
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "error",
+          "message"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error type",
+            "example": "Bad Request"
+          },
+          "message": {
+            "type": "string",
+            "description": "Error message",
+            "example": "Validation error: missing required field"
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad Request - Validation error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": "Bad Request",
+              "message": "Validation error: missing required field"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Not Found - Resource does not exist",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": "Not Found",
+              "message": "Resource not found"
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "Internal Server Error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": "Internal Server Error",
+              "message": "An unexpected error occurred"
+            }
+          }
         }
       }
     }

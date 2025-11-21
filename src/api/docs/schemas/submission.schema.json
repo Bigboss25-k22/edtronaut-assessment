@@ -1,0 +1,106 @@
+{
+  "SubmissionStatus": {
+    "type": "string",
+    "enum": ["IN_PROGRESS", "SUBMITTED"],
+    "description": "Status of a submission"
+  },
+  "SubmissionCreateRequest": {
+    "type": "object",
+    "required": ["learnerId", "simulationId"],
+    "properties": {
+      "learnerId": {
+        "type": "string",
+        "description": "Unique identifier of the learner",
+        "example": "learner-abc123"
+      },
+      "simulationId": {
+        "type": "string",
+        "description": "Unique identifier of the simulation",
+        "example": "sim-xyz789"
+      }
+    }
+  },
+  "SubmissionCreateResponse": {
+    "type": "object",
+    "required": ["message", "submission_id", "status"],
+    "properties": {
+      "message": {
+        "type": "string",
+        "example": "Submission created successfully"
+      },
+      "submission_id": {
+        "type": "string",
+        "format": "uuid",
+        "example": "550e8400-e29b-41d4-a716-446655440000"
+      },
+      "status": {
+        "$ref": "#/components/schemas/SubmissionStatus"
+      }
+    }
+  },
+  "SubmissionUpdateRequest": {
+    "type": "object",
+    "required": ["content"],
+    "properties": {
+      "content": {
+        "type": "object",
+        "description": "Updated submission content",
+        "properties": {
+          "source_code": {
+            "type": "string",
+            "description": "Source code submitted by learner",
+            "example": "function hello() { return 'world'; }"
+          },
+          "documentation": {
+            "type": "string",
+            "description": "Documentation or explanation of the solution",
+            "example": "This function returns a greeting message"
+          }
+        }
+      }
+    }
+  },
+  "SubmissionUpdateResponse": {
+    "type": "object",
+    "required": ["message", "submission_id", "status", "updated_at"],
+    "properties": {
+      "message": {
+        "type": "string",
+        "example": "Submission updated successfully"
+      },
+      "submission_id": {
+        "type": "string",
+        "format": "uuid",
+        "example": "550e8400-e29b-41d4-a716-446655440000"
+      },
+      "status": {
+        "$ref": "#/components/schemas/SubmissionStatus"
+      },
+      "updated_at": {
+        "type": "string",
+        "format": "date-time",
+        "example": "2025-11-21T10:30:00.000Z"
+      }
+    }
+  },
+  "SubmissionSubmitResponse": {
+    "type": "object",
+    "required": ["message", "submission_id", "status"],
+    "properties": {
+      "message": {
+        "type": "string",
+        "example": "Submission submitted successfully"
+      },
+      "submission_id": {
+        "type": "string",
+        "format": "uuid",
+        "example": "550e8400-e29b-41d4-a716-446655440000"
+      },
+      "status": {
+        "type": "string",
+        "enum": ["SUBMITTED"],
+        "example": "SUBMITTED"
+      }
+    }
+  }
+}

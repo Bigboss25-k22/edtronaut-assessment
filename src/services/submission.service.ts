@@ -7,7 +7,7 @@ const createSubmision = async (data: { learnerId: string; simulationId: string; 
         data: {
             learnerId: data.learnerId,
             simulationId: data.simulationId,
-            content: '',
+            content: { source_code: '', documentation: '' },
             status: 'IN_PROGRESS',
         },
     });
@@ -15,7 +15,7 @@ const createSubmision = async (data: { learnerId: string; simulationId: string; 
     return submission;
 };
 
-const updateSubmission = async (submissionId: string, content: string) => {
+const updateSubmission = async (submissionId: string, content: { source_code?: string; documentation?: string }) => {
 
     const existingSubmission = await prisma.submission.findUnique({
         where: { id: submissionId },
@@ -37,7 +37,30 @@ const updateSubmission = async (submissionId: string, content: string) => {
     return updatedSubmission;
 }
 
+const submitSubmission = async (submissionId: string) => {
+    const existing = await prisma.submission.findUnique({
+        where: { id: submissionId },
+    });
+
+    if (!existing) {
+        throw new HttpError(404, 'Submission not found');
+    }
+
+    if (existing.status === 'SUBMITTED') {
+        throw new HttpError(400, 'Submission has already been submitted');
+    }
+
+    const submittedSubmission = await prisma.submission.update({
+        where: { id: submissionId },
+        data: { status: 'SUBMITTED' },
+        select: { id: true, status: true },
+    });
+
+    return submittedSubmission;
+}
+
 export const SubmissionService = {
     createSubmision,
-    updateSubmission
+    updateSubmission,
+    submitSubmission
 };

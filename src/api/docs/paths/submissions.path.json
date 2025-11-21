@@ -1,0 +1,108 @@
+{
+  "/api/submissions": {
+    "post": {
+      "summary": "Create a new submission",
+      "description": "Creates a new submission with status IN_PROGRESS",
+      "tags": ["Submissions"],
+      "operationId": "createSubmission",
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/SubmissionCreateRequest" },
+            "example": {
+              "learnerId": "learner-abc123",
+              "simulationId": "sim-xyz789"
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "Submission created successfully",
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SubmissionCreateResponse" }
+            }
+          }
+        },
+        "400": { "$ref": "#/components/responses/BadRequest" },
+        "500": { "$ref": "#/components/responses/InternalError" }
+      }
+    }
+  },
+  "/api/submissions/{submissionId}": {
+    "patch": {
+      "summary": "Update submission content",
+      "description": "Updates content (only if status is IN_PROGRESS)",
+      "tags": ["Submissions"],
+      "operationId": "updateSubmission",
+      "parameters": [
+        {
+          "name": "submissionId",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string", "format": "uuid" },
+          "example": "550e8400-e29b-41d4-a716-446655440000"
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/SubmissionUpdateRequest" },
+            "example": {
+              "content": {
+                "source_code": "function add(a, b) { return a + b; }",
+                "documentation": "This function adds two numbers together"
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Submission updated successfully",
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SubmissionUpdateResponse" }
+            }
+          }
+        },
+        "400": { "$ref": "#/components/responses/BadRequest" },
+        "404": { "$ref": "#/components/responses/NotFound" },
+        "500": { "$ref": "#/components/responses/InternalError" }
+      }
+    }
+  },
+  "/api/submissions/{submissionId}/submit": {
+    "post": {
+      "summary": "Submit a submission",
+      "description": "Marks submission as SUBMITTED (no longer editable)",
+      "tags": ["Submissions"],
+      "operationId": "submitSubmission",
+      "parameters": [
+        {
+          "name": "submissionId",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string", "format": "uuid" },
+          "example": "550e8400-e29b-41d4-a716-446655440000"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Submission submitted successfully",
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SubmissionSubmitResponse" }
+            }
+          }
+        },
+        "400": { "$ref": "#/components/responses/BadRequest" },
+        "404": { "$ref": "#/components/responses/NotFound" },
+        "500": { "$ref": "#/components/responses/InternalError" }
+      }
+    }
+  }
+}

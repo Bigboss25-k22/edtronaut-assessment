@@ -5,5 +5,6 @@ const router = Router();
 
 router.post('/', SubmissionController.create);
 router.patch('/:submissionId', SubmissionController.update);
+router.post('/:submissionId/submit', SubmissionController.submit);
 
 export default router;

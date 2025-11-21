@@ -32,7 +32,23 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
+const submit = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { submissionId } = req.params;
+      const result = await SubmissionService.submitSubmission(submissionId);
+
+      return res.status(200).json({
+        message: 'Submission submitted successfully',
+        submission_id: result.id,
+        status: result.status,
+      });
+    } catch (error) {
+      next(error);
+    }
+}
+
 export const SubmissionController = {
     create,
-    update
+    update,
+    submit
 };

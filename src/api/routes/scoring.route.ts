@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import * as scoringController from '../controllers/scoring.controller';
+import { ScoringController }  from '../controllers/scoring.controller';
 
 const router = Router();
 
-router.post('/', scoringController.createJob);
-router.get('/:id', scoringController.getJob);
+router.post('/', ScoringController.createJob);
+router.get('/:id', ScoringController.getJob);
 
 export default router;

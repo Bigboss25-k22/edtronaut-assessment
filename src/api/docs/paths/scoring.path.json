@@ -1,0 +1,83 @@
+{
+  "/api/score-jobs": {
+    "post": {
+      "summary": "Create a scoring job",
+      "description": "Creates a new scoring job (queued for async processing)",
+      "tags": ["Scoring"],
+      "operationId": "createScoringJob",
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ScoringJobCreateRequest" },
+            "example": {
+              "submission_id": "550e8400-e29b-41d4-a716-446655440000"
+            }
+          }
+        }
+      },
+      "responses": {
+        "202": {
+          "description": "Scoring job accepted and queued",
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ScoringJobCreateResponse" }
+            }
+          }
+        },
+        "400": { "$ref": "#/components/responses/BadRequest" },
+        "404": { "$ref": "#/components/responses/NotFound" },
+        "500": { "$ref": "#/components/responses/InternalError" }
+      }
+    }
+  },
+  "/api/score-jobs/{id}": {
+    "get": {
+      "summary": "Get scoring job status",
+      "description": "Retrieves job status, score and feedback (when available)",
+      "tags": ["Scoring"],
+      "operationId": "getScoringJob",
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string", "format": "uuid" },
+          "example": "660e8400-e29b-41d4-a716-446655440111"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Scoring job retrieved successfully",
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ScoringJobResponse" },
+              "examples": {
+                "queued": {
+                  "summary": "Job is queued",
+                  "value": {
+                    "job_id": "660e8400-e29b-41d4-a716-446655440111",
+                    "status": "QUEUED",
+                    "score": null,
+                    "feedback": null
+                  }
+                },
+                "done": {
+                  "summary": "Job completed",
+                  "value": {
+                    "job_id": "660e8400-e29b-41d4-a716-446655440111",
+                    "status": "DONE",
+                    "score": 85.5,
+                    "feedback": "Good work!"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "404": { "$ref": "#/components/responses/NotFound" },
+        "500": { "$ref": "#/components/responses/InternalError" }
+      }
+    }
+  }
+}

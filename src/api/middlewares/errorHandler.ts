@@ -21,15 +21,14 @@ const errorHandler = (err: any, req: Request, res: Response, next: NextFunction)
     }
 
     const response = {
-        status: 'error',
-        code: statusCode,
+        error: statusCode >= 500 ? 'Internal Server Error' : 'Bad Request',
         message,
         ...(config.server.env === 'development' && { stack: err.stack }),
     };
 
-      if (config.server.env === 'development') {
+    if (config.server.env === 'development') {
         console.error(err);
-      }
+    }
     
     res.status(statusCode).json(response);
 };

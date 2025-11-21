@@ -12,11 +12,22 @@ const updateSubmission = {
         submissionId: Joi.string().uuid().required().messages({'any.required': 'submissionId is required', 'string.uuid': 'submissionId must be a valid UUID'}),
     }),
     body: Joi.object().keys({
-        content: Joi.string().required().messages({'any.required': 'content is required', 'string.base': 'content must be a string'}),
+        content: Joi.object().keys({
+            source_code: Joi.string().allow('').optional(),
+            documentation: Joi.string().allow('').optional(),
+        }).required().messages({'any.required': 'content is required'}),
     })
+}
+
+const submitSubmission = {
+    params: Joi.object().keys({
+        submissionId: Joi.string().uuid().required()
+            .messages({'any.required': 'submissionId is required', 'string.uuid': 'submissionId must be a valid UUID'}),
+    }),
 }
 
 export const SubmissionValidation = {
     createSubmissionSchema,
-    updateSubmission
+    updateSubmission,
+    submitSubmission
 }

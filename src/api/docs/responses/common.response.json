@@ -1,0 +1,38 @@
+{
+  "BadRequest": {
+    "description": "Bad Request - Validation error",
+    "content": {
+      "application/json": {
+        "schema": { "$ref": "#/components/schemas/Error" },
+        "example": {
+          "error": "Bad Request",
+          "message": "Validation error: missing required field"
+        }
+      }
+    }
+  },
+  "NotFound": {
+    "description": "Not Found - Resource does not exist",
+    "content": {
+      "application/json": {
+        "schema": { "$ref": "#/components/schemas/Error" },
+        "example": {
+          "error": "Not Found",
+          "message": "Resource not found"
+        }
+      }
+    }
+  },
+  "InternalError": {
+    "description": "Internal Server Error",
+    "content": {
+      "application/json": {
+        "schema": { "$ref": "#/components/schemas/Error" },
+        "example": {
+          "error": "Internal Server Error",
+          "message": "An unexpected error occurred"
+        }
+      }
+    }
+  }
+}

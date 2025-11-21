@@ -1,19 +1,42 @@
 import { Request, Response, NextFunction } from 'express';
+import { ScoringService } from '../../services/scoring.service';
 
-export const createJob = async (req: Request, res: Response, next: NextFunction) => {
+// POST /v1/score-jobs
+const createJob = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    res.status(201).json({ message: 'Scoring job queued' });
-  } catch (err) {
-    next(err);
+    const { submission_id } = req.body;
+
+    const job = await ScoringService.createScoringJob(submission_id);
+    
+    res.status(202).json({
+      job_id: job.id,
+      status: job.status 
+    });
+
+  } catch (error) {
+    next(error);
   }
 };
 
 export const getJob = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    res.json({ status: 'queued' });
-  } catch (err) {
-    next(err);
+    const { id } = req.params;
+    
+    const job = await ScoringService.getJobStatus(id);
+
+    res.status(200).json({
+      job_id: job.id,
+      status: job.status, 
+      score: job.score,     // Có điểm nếu DONE
+      feedback: job.feedback // Có feedback nếu DONE
+    });
+
+  } catch (error) {
+    next(error);
   }
 };
 
-export default { createJob, getJob };
+export const ScoringController = {
+  createJob,
+  getJob,
+};
