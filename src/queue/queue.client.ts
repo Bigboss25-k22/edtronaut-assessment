@@ -35,21 +35,8 @@ class QueueClient {
   }
 
   private setupEventListeners() {
-    // Job bắt đầu chạy (RUNNING)
-    this.queueEvents.on('active', ({ jobId }) => {
-      logger.logJobStarted(jobId); 
-    });
-
-    // Job hoàn thành (DONE)
-    this.queueEvents.on('completed', ({ jobId, returnvalue }) => {
-      logger.logJobCompleted(jobId, 0);
-    });
-
-    this.queueEvents.on('failed', ({ jobId, failedReason }) => {
-      const error = new Error(failedReason);
-      logger.logJobFailed(jobId, error);
-    });
-    
+    // Chỉ log các event liên quan đến queue connection
+    // Worker sẽ handle logging cho job lifecycle (started, completed, failed)
     this.queueEvents.on('error', (error) => {
         logger.error(`Queue connection error: ${error.message}`);
     });
