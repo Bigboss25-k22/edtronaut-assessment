@@ -86,7 +86,9 @@ const scoringWorker = new Worker(config.queue.name, async (job: Job) => {
     }
 }, { 
     connection, 
-    concurrency: 5 
+    concurrency: 5,
+    lockDuration: 30000,     
+    lockRenewTime: 15000,    
 });
 
 // Event listeners cho worker
@@ -94,8 +96,19 @@ scoringWorker.on('completed', (job) => {
     logger.info(`Worker: Job ${job.id} completed successfully`);
 });
 
-scoringWorker.on('failed', (job, err) => {
+scoringWorker.on('failed', async (job, err) => {
     logger.error(`Worker: Job ${job?.id} failed with error: ${err.message}`);
+    
+    if (job && job.attemptsMade >= 3) {
+        logger.error(`Job ${job.id} moved to DLQ after ${job.attemptsMade} attempts`, {
+            submissionId: job.data.submissionId,
+            error: err.message,
+            failedAt: new Date().toISOString()
+        });
+        
+        // TODO: Send alert (Slack, Email, PagerDuty)
+        // await sendAlert(`CRITICAL: Scoring job ${job.id} failed permanently`);
+    }
 });
 
 scoringWorker.on('error', (err) => {

@@ -12,7 +12,6 @@ class QueueClient {
       port: config.redis.port,
     };
 
-    // 1. Khởi tạo Queue (Để đẩy job)
     this.queue = new Queue(config.queue.name, {
       connection,
       defaultJobOptions: {
@@ -26,7 +25,6 @@ class QueueClient {
       },
     });
 
-    // 2. Khởi tạo QueueEvents (Để lắng nghe sự kiện từ Redis)
     this.queueEvents = new QueueEvents(config.queue.name, { connection });
 
     this.setupEventListeners();
@@ -35,8 +33,6 @@ class QueueClient {
   }
 
   private setupEventListeners() {
-    // Chỉ log các event liên quan đến queue connection
-    // Worker sẽ handle logging cho job lifecycle (started, completed, failed)
     this.queueEvents.on('error', (error) => {
         logger.error(`Queue connection error: ${error.message}`);
     });
@@ -49,10 +45,9 @@ class QueueClient {
   async addScoringJob(jobId: string, data: any) {
     try {
       const job = await this.queue.add('score-submission', data, {
-        jobId: jobId, // QUAN TRỌNG: Idempotency (Dùng ID DB làm ID Queue)
+        jobId: jobId, 
       });
 
-      // Log trạng thái QUEUED
       logger.logJobCreated(jobId, data.submissionId);
       return job;
     } catch (error: any) {
@@ -61,9 +56,6 @@ class QueueClient {
     }
   }
 
-  /**
-   * Lấy thống kê hàng đợi (Monitoring)
-   */
   async getQueueStats() {
     return await this.queue.getJobCounts(
       'waiting', 
@@ -74,9 +66,6 @@ class QueueClient {
     );
   }
 
-  /**
-   * Đóng kết nối (Graceful Shutdown)
-   */
   async close() {
     await this.queue.close();
     await this.queueEvents.close();
@@ -84,5 +73,4 @@ class QueueClient {
   }
 }
 
-// Export Singleton Instance
 export const queueClient = new QueueClient();

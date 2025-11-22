@@ -76,6 +76,33 @@ Asynchronous job processing system for submission scoring with queue-based archi
             └──────────────┘
 ```
 
+### Async Scoring Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant DB as PostgreSQL
+    participant Redis
+    participant Worker
+
+    Client->>API: POST /scoring {submissionId}
+    API->>DB: Create ScoringJob (QUEUED)
+    API->>Redis: Enqueue Job
+    API-->>Client: 202 Accepted {job_id}
+
+    Note right of API: Non-blocking response
+
+    Worker->>Redis: Pick Job from Queue
+    Worker->>DB: Update Status → RUNNING
+    Worker->>Worker: Calculate Score (Heuristic)
+    Worker->>DB: Update Status → DONE + Score
+
+    Client->>API: GET /scoring/:id
+    API->>DB: Query Job Status
+    API-->>Client: {status: "DONE", score: 85}
+```
+
 ### Request Flow
 
 #### 1️⃣ **Submission Lifecycle**
@@ -214,335 +241,41 @@ curl http://localhost:3000/health
 
 ## 📚 API Documentation
 
-### Base URL
+**Interactive Swagger UI:** `http://localhost:3000/docs`
 
-```
-http://localhost:3000/api
-```
+### Core Endpoints
 
-### Interactive Documentation
+| Method | Endpoint                      | Description                |
+| ------ | ----------------------------- | -------------------------- |
+| POST   | `/api/submissions`            | Create new submission      |
+| PATCH  | `/api/submissions/:id`        | Update submission content  |
+| POST   | `/api/submissions/:id/submit` | Submit for scoring         |
+| POST   | `/api/scoring`                | Create scoring job (async) |
+| GET    | `/api/scoring/:id`            | Poll job status & results  |
+| GET    | `/health`                     | Health check               |
 
-Visit `http://localhost:3000/docs` for interactive Swagger UI documentation.
+### Status Flow
 
----
+**Submission:** `IN_PROGRESS` → `SUBMITTED`  
+**Scoring Job:** `QUEUED` → `RUNNING` → `DONE` / `ERROR`
 
-### 📝 Submission Endpoints
-
-#### 1. Create Submission
-
-**Endpoint:** `POST /api/submissions`
-
-**Description:** Create a new submission for a learner. Initial status is `IN_PROGRESS` with empty content.
-
-**Request Body:**
-
-```json
-{
-  "learnerId": "learner123",
-  "simulationId": "sim456"
-}
-```
-
-**Response:** `201 Created`
-
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "learnerId": "learner123",
-  "simulationId": "sim456",
-  "content": {
-    "source_code": "",
-    "documentation": ""
-  },
-  "status": "IN_PROGRESS",
-  "createdAt": "2025-11-22T10:00:00.000Z",
-  "updatedAt": "2025-11-22T10:00:00.000Z"
-}
-```
-
-**Validation Rules:**
-
-- `learnerId`: Required, string
-- `simulationId`: Required, string
-
----
-
-#### 2. Update Submission Content
-
-**Endpoint:** `PATCH /api/submissions/:submissionId`
-
-**Description:** Update submission content (source code and/or documentation). Can only update submissions with `IN_PROGRESS` status.
-
-**Request Body:**
-
-```json
-{
-  "content": {
-    "source_code": "function hello() {\n  return 'world';\n}",
-    "documentation": "A simple hello world function that returns a string."
-  }
-}
-```
-
-**Response:** `200 OK`
-
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "learnerId": "learner123",
-  "simulationId": "sim456",
-  "content": {
-    "source_code": "function hello() {\n  return 'world';\n}",
-    "documentation": "A simple hello world function that returns a string."
-  },
-  "status": "IN_PROGRESS",
-  "updatedAt": "2025-11-22T10:05:00.000Z"
-}
-```
-
-**Validation Rules:**
-
-- `content.source_code`: Optional, string
-- `content.documentation`: Optional, string
-- Cannot update if status is `SUBMITTED`
-
-**Error Responses:**
-
-```json
-// 404 Not Found
-{
-  "error": "Not Found",
-  "message": "Submission not found"
-}
-
-// 409 Conflict
-{
-  "error": "Conflict",
-  "message": "Submission is already submitted and cannot be modified"
-}
-```
-
----
-
-#### 3. Submit for Scoring
-
-**Endpoint:** `POST /api/submissions/:submissionId/submit`
-
-**Description:** Mark submission as `SUBMITTED`. Locks the submission (no further edits allowed).
-
-**Request Body:** None
-
-**Response:** `200 OK`
-
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "status": "SUBMITTED",
-  "updatedAt": "2025-11-22T10:10:00.000Z",
-  "message": "Submission successfully submitted and locked for scoring"
-}
-```
-
-**Notes:**
-
-- After submission, content cannot be modified
-- Submission is now ready for scoring
-- Use `POST /api/scoring` to create a scoring job
-
----
-
-### 🎯 Scoring Endpoints
-
-#### 1. Create Scoring Job
-
-**Endpoint:** `POST /api/scoring`
-
-**Description:** Create an async scoring job for a submitted submission. Job is added to Redis queue for background processing.
-
-**Request Body:**
-
-```json
-{
-  "submissionId": "550e8400-e29b-41d4-a716-446655440000"
-}
-```
-
-**Response:** `201 Created`
-
-```json
-{
-  "id": "660e8400-e29b-41d4-a716-446655440001",
-  "submissionId": "550e8400-e29b-41d4-a716-446655440000",
-  "status": "QUEUED",
-  "score": null,
-  "feedback": null,
-  "createdAt": "2025-11-22T10:15:00.000Z",
-  "message": "Scoring job created and queued successfully"
-}
-```
-
-**Validation Rules:**
-
-- `submissionId`: Required, must be a valid UUID
-- Submission must exist
-- Submission status must be `SUBMITTED`
-- Cannot create duplicate scoring jobs for the same submission
-
-**Error Responses:**
-
-```json
-// 400 Bad Request
-{
-  "error": "Bad Request",
-  "message": "Submission must be in SUBMITTED status before scoring"
-}
-
-// 409 Conflict
-{
-  "error": "Conflict",
-  "message": "Scoring job already exists for this submission"
-}
-```
-
----
-
-#### 2. Get Scoring Job Status
-
-**Endpoint:** `GET /api/scoring/:id`
-
-**Description:** Get the current status and results of a scoring job. Poll this endpoint to check job completion.
-
-**Job Status States:**
-
-- `QUEUED`: Job is waiting in queue
-- `RUNNING`: Job is currently being processed
-- `DONE`: Job completed successfully (score available)
-- `ERROR`: Job failed after retries
-
-**Response (QUEUED):** `200 OK`
-
-```json
-{
-  "id": "660e8400-e29b-41d4-a716-446655440001",
-  "submissionId": "550e8400-e29b-41d4-a716-446655440000",
-  "status": "QUEUED",
-  "score": null,
-  "feedback": null,
-  "createdAt": "2025-11-22T10:15:00.000Z",
-  "startedAt": null,
-  "completedAt": null
-}
-```
-
-**Response (RUNNING):** `200 OK`
-
-```json
-{
-  "id": "660e8400-e29b-41d4-a716-446655440001",
-  "submissionId": "550e8400-e29b-41d4-a716-446655440000",
-  "status": "RUNNING",
-  "score": null,
-  "feedback": null,
-  "createdAt": "2025-11-22T10:15:00.000Z",
-  "startedAt": "2025-11-22T10:15:05.000Z",
-  "completedAt": null
-}
-```
-
-**Response (DONE):** `200 OK`
-
-```json
-{
-  "id": "660e8400-e29b-41d4-a716-446655440001",
-  "submissionId": "550e8400-e29b-41d4-a716-446655440000",
-  "status": "DONE",
-  "score": 85.5,
-  "feedback": "Code Quality: 35/40 points - Well-structured code with clear variable names.\nDocumentation: 28/30 points - Comprehensive documentation.\nPerformance: 22.5/30 points - Good algorithmic approach.",
-  "createdAt": "2025-11-22T10:15:00.000Z",
-  "startedAt": "2025-11-22T10:15:05.000Z",
-  "completedAt": "2025-11-22T10:15:08.000Z"
-}
-```
-
-**Response (ERROR):** `200 OK`
-
-```json
-{
-  "id": "660e8400-e29b-41d4-a716-446655440001",
-  "submissionId": "550e8400-e29b-41d4-a716-446655440000",
-  "status": "ERROR",
-  "score": null,
-  "feedback": "System Error: Failed to calculate score after 3 attempts",
-  "createdAt": "2025-11-22T10:15:00.000Z",
-  "startedAt": "2025-11-22T10:15:05.000Z",
-  "completedAt": "2025-11-22T10:15:20.000Z"
-}
-```
-
-**Error Response:**
-
-```json
-// 404 Not Found
-{
-  "error": "Not Found",
-  "message": "Scoring job not found"
-}
-```
-
----
-
-### 🏥 Health Check Endpoint
-
-**Endpoint:** `GET /health`
-
-**Description:** Check API server health status
-
-**Response:** `200 OK`
-
-```json
-{
-  "status": "ok",
-  "timestamp": "2025-11-22T10:00:00.000Z"
-}
-```
-
----
-
-### 🔄 Complete API Workflow Example
+### Quick Example
 
 ```bash
-# Step 1: Create submission
-curl -X POST http://localhost:3000/api/submissions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "learnerId": "learner123",
-    "simulationId": "sim456"
-  }'
-# → Returns submission_id
+# 1. Create submission
+POST /api/submissions {"learnerId": "user123", "simulationId": "sim456"}
 
-# Step 2: Update content (can do multiple times)
-curl -X PATCH http://localhost:3000/api/submissions/:submission_id \
-  -H "Content-Type: application/json" \
-  -d '{
-    "content": {
-      "source_code": "function add(a, b) { return a + b; }",
-      "documentation": "Addition function"
-    }
-  }'
+# 2. Update content
+PATCH /api/submissions/:id {"content": {"source_code": "..."}}
 
-# Step 3: Submit for scoring
-curl -X POST http://localhost:3000/api/submissions/:submission_id/submit
+# 3. Submit
+POST /api/submissions/:id/submit
 
-# Step 4: Create scoring job
-curl -X POST http://localhost:3000/api/scoring \
-  -H "Content-Type: application/json" \
-  -d '{
-    "submissionId": ":submission_id"
-  }'
-# → Returns job_id
+# 4. Create scoring job
+POST /api/scoring {"submissionId": ":id"} → Returns job_id
 
-# Step 5: Poll for results (repeat until status = DONE)
-curl http://localhost:3000/api/scoring/:job_id
+# 5. Poll results
+GET /api/scoring/:job_id
 ```
 
 ---
@@ -733,6 +466,84 @@ src/
 │   └── index.ts          # Environment config
 └── index.ts              # API server entry
 ```
+
+---
+
+## 🚀 Future Improvements
+
+### High Priority
+
+**1. Worker Crash Tolerance**
+
+- Add `lockDuration` and `lockRenewTime` to worker config
+- Prevents job loss if worker crashes mid-processing
+
+**2. Dead Letter Queue (DLQ)**
+
+- Move failed jobs to separate queue after max retries
+- Enable manual review of permanently failed jobs
+
+**3. Rate Limiting**
+
+- Implement Redis-backed rate limiter (e.g., 10 req/min per IP)
+- Prevent DoS attacks and ensure fair usage
+
+### Medium Priority
+
+**4. JWT Authentication**
+
+- Add JWT middleware for protected routes
+- Enable user context tracking in logs
+
+**5. Error Classification**
+
+- Distinguish transient errors (network timeout) vs permanent (invalid data)
+- Skip retries for permanent errors to fail fast
+
+**6. Queue Retention Strategy**
+
+- Keep completed jobs for 1 hour (audit trail)
+- Keep failed jobs for 7 days (debugging)
+- Prevent Redis memory bloat
+
+### Low Priority
+
+**7. Advanced Scoring**
+
+- Integrate LLM APIs (GPT-4, Claude) for semantic code review
+- Add test case execution for correctness
+- Use static analysis tools (ESLint, SonarQube)
+
+**8. Monitoring & Observability**
+
+- Prometheus metrics (throughput, latency percentiles)
+- Distributed tracing (Jaeger/Zipkin)
+- Alerting for queue depth thresholds
+
+**9. Database Optimization**
+
+- Read replicas for GET endpoints
+- PgBouncer connection pooling
+- Add indexes on frequently queried columns
+
+**10. Testing**
+
+- Unit tests (Jest)
+- Integration tests (Supertest)
+- Load tests (k6, Artillery)
+
+### Production Readiness Checklist
+
+- [ ] Secrets in vault (AWS Secrets Manager, HashiCorp Vault)
+- [ ] HTTPS/TLS with valid certificates
+- [ ] CORS restricted to allowed origins
+- [ ] Security headers (Helmet.js)
+- [ ] Graceful shutdown with drain period
+- [ ] Health checks for DB/Redis connectivity
+- [ ] Centralized logging (Loki, Elasticsearch)
+- [ ] Database backup strategy (daily snapshots)
+- [ ] Disaster recovery plan documented
+- [ ] Load balancer with health checks
 
 ---
 

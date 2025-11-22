@@ -27,8 +27,8 @@ export const getJob = async (req: Request, res: Response, next: NextFunction) =>
     res.status(200).json({
       job_id: job.id,
       status: job.status, 
-      score: job.score,     // Có điểm nếu DONE
-      feedback: job.feedback // Có feedback nếu DONE
+      score: job.score,     
+      feedback: job.feedback 
     });
 
   } catch (error) {
