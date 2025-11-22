@@ -42,7 +42,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: edtronaut-api
-    command: node dist/index.js
+    command: sh -c "npx prisma db push --skip-generate && node dist/index.js"
     ports:
       - "3000:3000"
     environment:
