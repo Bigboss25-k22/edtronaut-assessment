@@ -553,7 +553,7 @@ MIT License
 
 ## 👤 Author
 
-**Bùi Chí Nam**  
+**Bùi Tấn Thành Nam**  
 Email: nambui250403@gmail.com  
 GitHub: [@Bigboss25-k22](https://github.com/Bigboss25-k22)
 
