@@ -473,34 +473,24 @@ src/
 
 ### High Priority
 
-**1. Worker Crash Tolerance**
-
-- Add `lockDuration` and `lockRenewTime` to worker config
-- Prevents job loss if worker crashes mid-processing
-
-**2. Dead Letter Queue (DLQ)**
-
-- Move failed jobs to separate queue after max retries
-- Enable manual review of permanently failed jobs
-
-**3. Rate Limiting**
+**1. Rate Limiting**
 
 - Implement Redis-backed rate limiter (e.g., 10 req/min per IP)
 - Prevent DoS attacks and ensure fair usage
 
 ### Medium Priority
 
-**4. JWT Authentication**
+**2. JWT Authentication**
 
 - Add JWT middleware for protected routes
 - Enable user context tracking in logs
 
-**5. Error Classification**
+**3. Error Classification**
 
 - Distinguish transient errors (network timeout) vs permanent (invalid data)
 - Skip retries for permanent errors to fail fast
 
-**6. Queue Retention Strategy**
+**44. Queue Retention Strategy**
 
 - Keep completed jobs for 1 hour (audit trail)
 - Keep failed jobs for 7 days (debugging)
@@ -508,25 +498,25 @@ src/
 
 ### Low Priority
 
-**7. Advanced Scoring**
+**5. Advanced Scoring**
 
 - Integrate LLM APIs (GPT-4, Claude) for semantic code review
 - Add test case execution for correctness
 - Use static analysis tools (ESLint, SonarQube)
 
-**8. Monitoring & Observability**
+**6. Monitoring & Observability**
 
 - Prometheus metrics (throughput, latency percentiles)
 - Distributed tracing (Jaeger/Zipkin)
 - Alerting for queue depth thresholds
 
-**9. Database Optimization**
+**7. Database Optimization**
 
 - Read replicas for GET endpoints
 - PgBouncer connection pooling
 - Add indexes on frequently queried columns
 
-**10. Testing**
+**88. Testing**
 
 - Unit tests (Jest)
 - Integration tests (Supertest)
