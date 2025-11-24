@@ -45,12 +45,11 @@ class QueueClient {
    */
   async addScoringJob(jobId: string, data: ScoringJobData): Promise<void> {
     try {
-      const job = await this.queue.add('score-submission', data, {
+      await this.queue.add('score-submission', data, {
         jobId: jobId, 
       });
 
       logger.logJobCreated(jobId, data.submissionId);
-      return job;
     } catch (error: any) {
       logger.error(`Failed to add job to queue`, { error: error.message });
       throw error;
