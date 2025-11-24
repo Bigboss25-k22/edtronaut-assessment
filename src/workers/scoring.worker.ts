@@ -2,15 +2,15 @@ import { Worker, Job } from 'bullmq';
 import prisma from '../db/prisma';
 import config from '../config';
 import logger from '../utils/logger';
-
-import ScoringLogicService from '../services/scoring-logic.service'; 
+import ScoringLogicService from '../services/scoring-logic.service';
+import { ScoringJobData, ScoringJobStatus, SubmissionContent } from '../types';
 
 const connection = {
     host: config.redis.host,
     port: config.redis.port,
 }
 
-const scoringWorker = new Worker(config.queue.name, async (job: Job) => {
+const scoringWorker = new Worker<ScoringJobData>(config.queue.name, async (job: Job<ScoringJobData>) => {
     const { scoringJobId, submissionId, content } = job.data;
     
     try {
@@ -25,12 +25,12 @@ const scoringWorker = new Worker(config.queue.name, async (job: Job) => {
         // Log job started với created timestamp để tính queued duration
         logger.logJobStarted(scoringJobId, existingJob.createdAt);
 
-        if (existingJob.status === 'DONE') {
+        if (existingJob.status === ScoringJobStatus.DONE) {
             logger.info(`Job ${scoringJobId} already completed, skipping`);
             return { score: existingJob.score, feedback: existingJob.feedback };
         }
 
-        if (existingJob.status === 'RUNNING') {
+        if (existingJob.status === ScoringJobStatus.RUNNING) {
             logger.warn(`Job ${scoringJobId} is already running, potential duplicate`);
         }
 
@@ -38,17 +38,17 @@ const scoringWorker = new Worker(config.queue.name, async (job: Job) => {
         const startedAt = new Date();
         await prisma.scoringJob.update({
             where: { id: scoringJobId },
-            data: { status: 'RUNNING', startedAt },
+            data: { status: ScoringJobStatus.RUNNING, startedAt },
         });
 
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        const result = ScoringLogicService.calculate(content);
+        const result = ScoringLogicService.calculate(content as SubmissionContent);
 
         await prisma.scoringJob.update({
             where: { id: scoringJobId },
             data: {
-                status: 'DONE',
+                status: ScoringJobStatus.DONE,
                 score: result.score,
                 feedback: result.feedback,
                 completedAt: new Date(),
@@ -77,7 +77,7 @@ const scoringWorker = new Worker(config.queue.name, async (job: Job) => {
         await prisma.scoringJob.update({
             where: { id: scoringJobId },
             data: {
-                status: 'ERROR',
+                status: ScoringJobStatus.ERROR,
                 feedback: `System Error: ${error.message}`,
                 completedAt: new Date(),
             }

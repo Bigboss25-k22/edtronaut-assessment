@@ -1,18 +1,10 @@
-export interface SubmissionContent {
-  source_code: string;
-  documentation?: string;
-}
-
-export interface ScoringResult {
-  score: number;
-  feedback: string;
-}
+import { SubmissionContent, ScoringResult } from '../types';
 
 class ScoringLogicService {
     public calculate(content: SubmissionContent): ScoringResult {
 
         let score = 0;
-        const feedbackList: String[] = [];
+        const feedbackList: string[] = [];
 
         const code = content.source_code || '';
         const documentation = content.documentation || '';

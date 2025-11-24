@@ -1,9 +1,10 @@
 import { Queue, QueueEvents } from 'bullmq';
 import config from '../config';
 import logger from '../utils/logger';
+import { ScoringJobData } from '../types';
 
 class QueueClient {
-  public queue: Queue;
+  public queue: Queue<ScoringJobData>;
   private queueEvents: QueueEvents;
 
   constructor() {
@@ -12,7 +13,7 @@ class QueueClient {
       port: config.redis.port,
     };
 
-    this.queue = new Queue(config.queue.name, {
+    this.queue = new Queue<ScoringJobData>(config.queue.name, {
       connection,
       defaultJobOptions: {
         attempts: config.queue.maxAttempts,
@@ -42,7 +43,7 @@ class QueueClient {
    * @param jobId - ID của Job (lấy từ Database)
    * @param data - Dữ liệu cần thiết để chấm (submissionId, content...)
    */
-  async addScoringJob(jobId: string, data: any) {
+  async addScoringJob(jobId: string, data: ScoringJobData): Promise<void> {
     try {
       const job = await this.queue.add('score-submission', data, {
         jobId: jobId, 

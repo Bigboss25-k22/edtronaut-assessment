@@ -1,7 +1,20 @@
 import { NextFunction, Request, Response } from 'express';
 import { SubmissionService } from '../../services/submission.service';
+import {
+    CreateSubmissionBody,
+    CreateSubmissionResponse,
+    UpdateSubmissionParams,
+    UpdateSubmissionBody,
+    UpdateSubmissionResponse,
+    SubmitSubmissionParams,
+    SubmitSubmissionResponse,
+} from '../../types';
 
-const create = async (req: Request, res: Response, next: NextFunction) => {
+const create = async (
+    req: Request<{}, CreateSubmissionResponse, CreateSubmissionBody>,
+    res: Response<CreateSubmissionResponse>,
+    next: NextFunction
+) => {
     try {
         const result = await SubmissionService.createSubmision(req.body);
         res.status(201).json({ 
@@ -15,7 +28,11 @@ const create = async (req: Request, res: Response, next: NextFunction) => {
     }
 }
 
-const update = async (req: Request, res: Response, next: NextFunction) => {
+const update = async (
+    req: Request<UpdateSubmissionParams, UpdateSubmissionResponse, UpdateSubmissionBody>,
+    res: Response<UpdateSubmissionResponse>,
+    next: NextFunction
+) => {
   try {
     const { submissionId } = req.params;
     
@@ -32,7 +49,11 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-const submit = async (req: Request, res: Response, next: NextFunction) => {
+const submit = async (
+    req: Request<SubmitSubmissionParams, SubmitSubmissionResponse>,
+    res: Response<SubmitSubmissionResponse>,
+    next: NextFunction
+) => {
     try {
       const { submissionId } = req.params;
       const result = await SubmissionService.submitSubmission(submissionId);
