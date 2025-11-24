@@ -25,23 +25,47 @@ const scoringWorker = new Worker<ScoringJobData>(config.queue.name, async (job: 
         // Log job started với created timestamp để tính queued duration
         logger.logJobStarted(scoringJobId, existingJob.createdAt);
 
+        // Idempotency: Skip if already DONE
         if (existingJob.status === ScoringJobStatus.DONE) {
             logger.info(`Job ${scoringJobId} already completed, skipping`);
             return { score: existingJob.score, feedback: existingJob.feedback };
         }
 
+        // Idempotency: Skip if already RUNNING (another worker processing)
         if (existingJob.status === ScoringJobStatus.RUNNING) {
-            logger.warn(`Job ${scoringJobId} is already running, potential duplicate`);
+            logger.warn(`Job ${scoringJobId} is already running by another worker, skipping`);
+            return;
         }
 
-        // Update status to RUNNING
+        // Skip if not QUEUED (e.g., ERROR state before final retry)
+        if (existingJob.status !== ScoringJobStatus.QUEUED) {
+            logger.info(`Job ${scoringJobId} is not in QUEUED state (${existingJob.status}), skipping`);
+            return;
+        }
+
+        // Atomic update: Only update if still QUEUED (prevent race condition)
         const startedAt = new Date();
-        await prisma.scoringJob.update({
-            where: { id: scoringJobId },
-            data: { status: ScoringJobStatus.RUNNING, startedAt },
+        const updated = await prisma.scoringJob.updateMany({
+            where: { 
+                id: scoringJobId,
+                status: ScoringJobStatus.QUEUED  // Conditional update
+            },
+            data: { 
+                status: ScoringJobStatus.RUNNING, 
+                startedAt 
+            },
         });
 
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // If update failed, another worker already picked it up
+        if (updated.count === 0) {
+            logger.warn(`Job ${scoringJobId} was picked up by another worker, skipping`);
+            return;
+        }
+
+        // Mock processing delay (remove in production)
+        if (process.env.NODE_ENV === 'development') {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
 
         const result = ScoringLogicService.calculate(content as SubmissionContent);
 
@@ -74,21 +98,31 @@ const scoringWorker = new Worker<ScoringJobData>(config.queue.name, async (job: 
             jobData?.startedAt || undefined
         );
 
-        await prisma.scoringJob.update({
-            where: { id: scoringJobId },
-            data: {
-                status: ScoringJobStatus.ERROR,
-                feedback: `System Error: ${error.message}`,
-                completedAt: new Date(),
-            }
-        });
-        throw error;
+        // Only mark as ERROR if final attempt (after 3 retries)
+        if (job.attemptsMade >= 3) {
+            await prisma.scoringJob.update({
+                where: { id: scoringJobId },
+                data: {
+                    status: ScoringJobStatus.ERROR,
+                    feedback: `Failed after ${job.attemptsMade} attempts: ${error.message}`,
+                    completedAt: new Date(),
+                }
+            });
+        } else {
+            // Reset to QUEUED for retry
+            await prisma.scoringJob.update({
+                where: { id: scoringJobId },
+                data: { status: ScoringJobStatus.QUEUED }
+            });
+        }
+        
+        throw error;  // Let BullMQ handle retry
     }
 }, { 
     connection, 
     concurrency: 5,
-    lockDuration: 30000,     
-    lockRenewTime: 15000,    
+    lockDuration: 60000,     // 60s (tăng để an toàn hơn)
+    lockRenewTime: 30000,    // 30s (renew ở giữa)
 });
 
 // Event listeners cho worker
