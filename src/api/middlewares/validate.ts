@@ -9,7 +9,7 @@ interface ValidationSchema {
     params?: Joi.Schema;
 }
 
-const validate = (schema: ValidationSchema) => (req: Request, res: Response, next: NextFunction) => {
+const validate = (schema: ValidationSchema): any => (req: Request, res: Response, next: NextFunction) => {
     const validSchema = pick(schema, ['body', 'query', 'params']);
     const object = pick(req, Object.keys(validSchema));
 
